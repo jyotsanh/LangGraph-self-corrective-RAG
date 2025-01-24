@@ -24,7 +24,7 @@ logging.basicConfig(
 def update_endpoint(vectore_store:VectorDB, senderId: str):
     
     try:
-        print("---------------------------------------------------------------------------Getting response from Runnable LLM node---------------------------------------------------------------------------")
+        print("---------------------------------------------------------------------------Updating Vector Store---------------------------------------------------------------------------")
         
         # Measure the start time 
         start_time = time.time()
@@ -41,7 +41,8 @@ def update_endpoint(vectore_store:VectorDB, senderId: str):
         # Log user query
         user_log_message = f"Vector Store: {vectore_store} Updated!!\n Time taken : {response_time}\n" 
         logging.info(user_log_message)
-        
+        print("---------------------------------------------------------------------------Updating Vector Store---------------------------------------------------------------------------")
+
         res = {"msg": f"{response}"}
         return res
     except Exception as e:

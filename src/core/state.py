@@ -7,6 +7,8 @@ from libs.libs import *
 
 class MyState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+    documents: str
+    answer: str
     
 # Data model
 class RouteQuery(BaseModel):
@@ -27,11 +29,16 @@ class CheckRelevance(BaseModel):
             - "no": The document is relevant and should be routed to re-write the question.
             
     """
-    binary_score: Literal["yes", "no"] = Field(
+    binary_score: Literal["generate_response", "rewrite_question"] = Field(
         ...,
         description="Indicates if the document is relevant to the query. Choose 'not' to re-write the question or 'yes' to generate a response.",
     )
 
+class RewriteQuestion(BaseModel):
+    rewritten_question: str = Field(
+        ...,
+        description="Rewritten question based on the context of the document.",
+    )
 
 class VectorDB(Enum):
     CHROMA = "chroma"

@@ -14,9 +14,9 @@ class MyState(TypedDict):
 class RouteQuery(BaseModel):
     """Route a user query to the most relevant datasource."""
 
-    datasource: Literal["vectorstore", "web_search"] = Field(
+    datasource: Literal["vectorstore", "web_search","query"] = Field(
         ...,
-        description="Given a user question choose to route it to web search or a vectorstore.",
+        description="Given a user question choose to route it to web search, vectorstore or a greet.",
     )
     
 class CheckRelevance(BaseModel):
@@ -29,7 +29,7 @@ class CheckRelevance(BaseModel):
             - "no": The document is relevant and should be routed to re-write the question.
             
     """
-    binary_score: Literal["generate_response", "rewrite_question"] = Field(
+    binary_score: Literal["yes", "no"] = Field(
         ...,
         description="Indicates if the document is relevant to the query. Choose 'not' to re-write the question or 'yes' to generate a response.",
     )

@@ -7,16 +7,11 @@ router = APIRouter(prefix="/response", tags=["Chat"])
 # libs
 from libs.libs import *
 
-# logging
-import logging
+# logs
 import time
+from logs.logger_config import logger as logging
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# Configure logging
-logging.basicConfig(
-    filename='logs/history.log',
-    level=logging.INFO,
-    format='%(message)s'  # Simple format to match your desired output
-)
 @router.post("/")
 def chat_endpoint(query: str, senderId: str):
     """
@@ -30,7 +25,10 @@ def chat_endpoint(query: str, senderId: str):
         
         # Measure the start time 
         start_time = time.time()
-        
+        logging.info(
+            "\n-------------------------------------------------------------------"
+            f"\nEntering the `get_response` function at {current_time} seconds\n"
+            )
         response = get_response(query, senderId)
         
         # Measure the end time
@@ -38,10 +36,10 @@ def chat_endpoint(query: str, senderId: str):
         # Calculate the time taken
         response_time = end_time - start_time
         
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
         
         # Log user query
-        user_log_message = f"{current_time}\nUser Query: {query}\n"
+        user_log_message = f"\n{current_time}\nUser Query: {query}\n"
         logging.info(user_log_message)
 
         # Log bot response with response time
@@ -59,7 +57,10 @@ def chat_endpoint(query: str, senderId: str):
         # return ChatResponse(message=response['messages'][-1].content)
         respond = {"msg":response['messages'][-1].content}
         
-        print("------------------------------------------------------------------------------Getting response from Runnable LLM node-------------------------------------------------------------------------------")
+        logging.info(
+            "Sucessfully responded"
+            "-------------------------------------------------------------------"
+            )
         return respond
     except Exception as e:
         # Log the error (you'd use proper logging in production)
@@ -67,4 +68,8 @@ def chat_endpoint(query: str, senderId: str):
         respond = {
             "msg": "I'm sorry, there was an error processing your request."
         }
+        logging.info(
+            f"\nChat error: \n{e}\n"
+            "-------------------------------------------------------------------"
+            )
         return respond

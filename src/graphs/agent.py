@@ -14,6 +14,13 @@ def get_response(query, sender_id):
         "configurable": {
             "thread_id": sender_id,
         }
-    }
-    response = graph.invoke({"message":query},config)
+    }    
+    state = MyState(
+        messages=[f"{query}"],
+        documents="",
+        relevance="",
+        answer= ""
+                    )
+
+    response = graph.invoke(state,config)
     return response['messages'][-1]

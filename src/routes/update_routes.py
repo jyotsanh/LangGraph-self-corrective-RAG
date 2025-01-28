@@ -10,16 +10,10 @@ from libs.libs import *
 #states
 from core.state import *
 
-# logging
-import logging
+# logs
 import time
+from logs.logger_config import logger as logging
 
-# Configure logging
-logging.basicConfig(
-    filename='logs/history.log',
-    level=logging.INFO,
-    format='%(message)s'  # Simple format to match your desired output
-)
 @router.post("/")
 def update_endpoint(vectore_store:VectorDB, senderId: str):
     
@@ -39,7 +33,7 @@ def update_endpoint(vectore_store:VectorDB, senderId: str):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # Log user query
-        user_log_message = f"Vector Store: {vectore_store} Updated!!\n Time taken : {response_time}\n" 
+        user_log_message = f"\nVector Store: {vectore_store} Updated!!\n Time taken : {response_time}\n" 
         logging.info(user_log_message)
         print("---------------------------------------------------------------------------Updating Vector Store---------------------------------------------------------------------------")
 

@@ -2,7 +2,7 @@ from core.state import *
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from langchain.document_loaders import PyPDFLoader
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
@@ -15,24 +15,30 @@ from langgraph.checkpoint.memory import MemorySaver
 from libs.libs import *
 
 from langchain_community.tools.tavily_search import TavilySearchResults
-
+from langchain_community.document_loaders import PyPDFLoader
 web_search_tool = TavilySearchResults(k=3)
 
+# logs
+import time
+from logs.logger_config import logger as logging
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-
-def query_analyser(state:MyState)-> Literal["vectorstore", f"web_search"]:
-    
-    query = state['messages'][-1].content
+def query_analyser(state:MyState,testing=False)-> Literal["vectorstore", f"web_search","greet"]:
+    if testing:
+        query = state['messages'][-1]
+    else:
+        query = state['messages'][-1].content
     
     system_prompt =  """
-                    You are an expert at routing a user question to a vectorstore or web search.
-                    The vectorstore contains documents related to the following topics.
-                    - Who created This Project
-                    - Who is Jyotsan, His CV details.
-                    - Game of Thrones
-                    - The Lord of the Rings
-                    - Star Wars
-                    Use the vectorstore for questions on these topics. Otherwise, use web-search.
+                    You are an expert at routing a user question to a vectorstore,web search and greet.\n
+                    The vectorstore contains documents related to the following topics.\n
+                    - Who created This Project\n
+                    - Who is Jyotsan, His CV details.\n
+                    - Game of Thrones\n
+                    - The Lord of the Rings\n
+                    - Star Wars\n
+                    Use the vectorstore for questions on these topics. Otherwise, use web-search for GK type of questions\n.
+                    if the query is simple greet then just return greet.\n
                         """
     route_prompt = ChatPromptTemplate.from_messages(
         [
@@ -47,6 +53,7 @@ def query_analyser(state:MyState)-> Literal["vectorstore", f"web_search"]:
     chain = route_prompt | structured_llm_router
     
     response = chain.invoke({"query":query})
+    print(f"going to {response.datasource}")
     return response.datasource
 
 def web_search(state:MyState):
@@ -70,54 +77,106 @@ def web_search(state:MyState):
 
     return state
 
-def retriever(state:MyState):
+def _load_pdf(pdf_path: str):
+    """Helper function to load documents from a PDF file."""
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"PDF not found at {pdf_path}")
     
-    pdf_path = state['./data/MyCV']  # Path to the PDF file
     loader = PyPDFLoader(pdf_path)
-    docs_list = loader.load()  # Load documents from the PDF
-    # Set embeddings
-    embd = get_embedding(model="google")
-    # Split
+    return loader.load()
+
+def _split_documents(docs_list):
+    """Helper function to split documents into chunks."""
     text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-        chunk_size=600, chunk_overlap=100
+        chunk_size=100, chunk_overlap=40
     )
-    doc_splits = text_splitter.split_documents(docs_list)
-    # Add to vectorstore
+    return text_splitter.split_documents(docs_list)
+
+def _initialize_vectorstore(doc_splits, embd):
+    """Helper function to initialize vector store with embeddings."""
     vectorstore = Chroma.from_documents(
         documents=doc_splits,
         collection_name="rag-chroma",
         embedding=embd,
     )
-    retriever = vectorstore.as_retriever()
+    return vectorstore.as_retriever()
+
+
+
+def retriever(state: MyState):
+    """
+    Retrieves relevant documents based on the latest user message in the state.
+
+    Args:
+        state (MyState): The current application state containing messages.
+
+    Returns:
+        Dict[str, Any]: Updated state with retrieved documents.
+    """
+    pdf_path = './data/Profile.pdf'  # PDF file path
+    try:
+        # Load documents from the PDF
+        docs_list = _load_pdf(pdf_path)
+
+        # Initialize embeddings
+        embd = get_embedding(model="openai")
+        if embd is None:
+            raise ValueError("Embeddings not found")
+
+        # Process documents into chunks
+        doc_splits = _split_documents(docs_list)
+        print(len(doc_splits))
+        # Create vector store and retriever
+        retriever = _initialize_vectorstore(doc_splits, embd)
+
+        # Extract latest user query safely
+        test_query = state['messages'][-1].content
+        docs = retriever.invoke(test_query)
+        
+        context = ""
+        for doc in docs:
+            context += doc.page_content
+        print(f"document retrieved")
+        return {**state,"documents":context}
+    except Exception as e:
+        print(e)
     
-    query = state['messages'][-1].content
-    docs = retriever.invoke(query)
-    
-    return {**state,"documents":docs}
-    
-def check_relevance(state:MyState)->Literal[f"generate_response", f"rewrite_question"]:
-    system_prompt =    """
+def check_relevance(state:MyState,testing=False)->Literal["yes", "no"]:
+    print("checking the relevance of the document")
+    retrieved_document = state['documents']
+    print("\n ------\n")
+    print(retrieved_document)
+    print("\n ------\n")
+    system_prompt =   f"""
                        You are a grader assessing relevance of a retrieved document to a user question. \n 
-                        If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. \n
-                        It does not need to be a stringent test. The goal is to filter out erroneous retrievals. \n
-                        Give 'generate_response' or 'rewrite_question' score to indicate whether the document is relevant to the question.
+                        If you think you can answer the use question with given context then. grade it as relevant -> 'yes' otherwise 'no'. \n
+                        The goal is to filter out erroneous retrievals. \n
+                        Give 'yes' or 'no' score to indicate whether the document is relevant to the question.\n
+                        Retrieved document: \n\n {retrieved_document} 
                         """
                         
     grade_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
+            ("human", "User question: {question}"),
         ]
     )
-    llm = get_llm(model="google",temperature=0)
+    
+    llm = get_llm(model="openai",temperature=0)
     structured_llm_router = llm.with_structured_output(CheckRelevance)
     chain = grade_prompt | structured_llm_router
+    print(f"\n {state} \n")
     
-    document = state['documents']
-    question = state['messages'][-1].content
-    response = chain.invoke({"document":document,"question":question})
-    
-    return response.binary_score
+    if testing:
+        question = state['messages'][-1]
+    else:
+        question = state['messages'][-1].content
+    try:
+        response = chain.invoke({"question": question})
+        print(f"relevance score: {response.binary_score}")
+        return response.binary_score
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 def rewrite_question(state:MyState):
@@ -148,30 +207,35 @@ def rewrite_question(state:MyState):
 def generate_response(state:MyState):
     question = state['messages'][-1].content
     document = state['documents']
-    system_prompt = """
-                    From the given Document, Act very friendly and respond like human friend, like you know the person. Answer User Queries.
+    system_prompt = f"""
+                    From the given Document, Act very friendly and respond like human friend.\n
+                    and Give the answer in less than 100 words.\n
+                    Don't Answer Like: `They also know`,`they are `\n
+                    Context: \n\n {document}
                     """
     response_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
+            ("human", "User question: {question}"),
         ]
     )
     
-    llm = get_llm(model="google",temperature=0.6)
+    llm = get_llm(model="openai",temperature=0.6)
     chain = response_prompt | llm
     chain_response = chain.invoke(
                 {
-                "document":document,
                 "question":question
                 }
-                                  )
+    )
+    print(chain_response.content)
+    print("hehe")
     return {**state,"answer":chain_response.content}
     
 
 def build_graph():
+    
     builder = StateGraph(MyState)
-        
+    logging.info(f"Graph Building....\n")
     builder.add_node("vectorstore",retriever)
     builder.add_node("web_search",web_search)
     
@@ -184,6 +248,7 @@ def build_graph():
         {
             "vectorstore": "vectorstore", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
             "web_search": "web_search", # -> if query analysis outputs web_search go to web_search_NODE
+            "greet":"generate_response"
         }
         
     )
@@ -197,8 +262,8 @@ def build_graph():
         # }
         check_relevance,
         {
-            "generate_response": "generate_response", # -> if check_relevance outputs yes go to vectorstore_NODE.
-            "rewrite_question": "rewrite_question" # -> if check_relevance outputs no go to rewrite_question
+            "yes": "generate_response", # -> if check_relevance outputs yes go to vectorstore_NODE.
+            "no": "rewrite_question" # -> if check_relevance outputs no go to rewrite_question
         }
     )
     
@@ -212,7 +277,7 @@ def build_graph():
             checkpointer = ChatMemory
         )
     # Visualize your graph
-    from IPython.display import Image, display
-    graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")
-        
+    # from IPython.display import Image, display
+    # graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")
+    logging.info("Graph Building.... **Sucessfull** ")
     return graph

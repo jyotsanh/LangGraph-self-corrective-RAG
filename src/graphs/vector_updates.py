@@ -6,11 +6,14 @@ from libs.libs import *
 #state
 from core.state import *
 
+# db
+from models.db import *
 
 def update_vector_store(vector_store: VectorDB, sender_id):
     try:
         collection_name=os.getenv("GENERAL_STC")
         print(f"create a vector store for ,{collection_name}")
+        embedding_function = get_embedding(model="openai")
         response = VectorStore(
                             collection_name=os.getenv("GENERAL_STC"),
                             store_type=vector_store, 
@@ -35,10 +38,11 @@ def update_general_faq_stc(vector_store: VectorDB):
     try:
         collection_name=os.getenv("GENERAL_STC")
         print(f"create a vector store for ,{collection_name}")
+        embedding_function = get_embedding(model="openai")
         response = VectorStore(
                             collection_name=os.getenv("GENERAL_STC"),
                             store_type=vector_store, 
-                            embeddings =embedding_function, 
+                            embeddings=embedding_function, 
                             path = "./data/FormattedData/GeneralFAQ.md"
                             ).create_vector_store()
         return response

@@ -14,12 +14,14 @@ from core.state import *
 import time
 from logs.logger_config import logger as logging
 
+
+
 @router.post("/")
 def update_endpoint(vectore_store:VectorDB, senderId: str):
     
     try:
-        print("---------------------------------------------------------------------------Updating Vector Store---------------------------------------------------------------------------")
-        
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"[{timestamp}] [UPDATE] Received request to update vector store for sender ID: {senderId}")
         # Measure the start time 
         start_time = time.time()
         
@@ -30,19 +32,24 @@ def update_endpoint(vectore_store:VectorDB, senderId: str):
         # Calculate the time taken
         response_time = end_time - start_time
         
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Log user query
-        user_log_message = f"\nVector Store: {vectore_store} Updated!!\n Time taken : {response_time}\n" 
-        logging.info(user_log_message)
-        print("---------------------------------------------------------------------------Updating Vector Store---------------------------------------------------------------------------")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # Log successful update
+        logging.info(
+            f"[{timestamp}] [UPDATE SUCCESS] Vector store updated successfully!\n"
+            f"Sender ID: {senderId}\n"
+            f"Vector Store: {vectore_store}\n"
+            f"Time Taken: {response_time:.2f} seconds\n"
+            "----------------------------------------------------------------------------------------------------------------------------"
+        )
+        
         res = {"msg": f"{response}"}
         return res
     except Exception as e:
-        # Log the error (you'd use proper logging in production)
-        print(f"Chat error: {e}")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        error_message = f"[{timestamp}] [UPDATE ERROR] Failed to update vector store for sender ID: {senderId}\nError: {e}"
+        logging.error(error_message)
         respond = {
-            "msg": "I'm sorry, there was an error processing your request."
+            "msg": "I'm sorry, there was an error processing your request. Pls check the logs for more details."
         }
         return respond

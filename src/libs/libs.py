@@ -40,39 +40,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
-# def get_llm(model:str='google',temperature:float=0.4):
-#     if model=="google":
-#         llm = ChatGoogleGenerativeAI(
-#                 model="gemini-1.5-flash",
-#                 api_key=os.getenv("GOOGLE_API_KEY"),
-#                 temperature=temperature,
-#                 max_tokens=None,
-#                 timeout=None,
-#                 max_retries=2,
-#             # other params...
-#             )
-#         return llm
-#     elif model=="openai":
-#         llm=ChatOpenAI(
-#                 api_key=os.getenv('OPENAI_API_KEY'),
-#                 model="gpt-4o-mini", 
-#                 temperature=temperature,
-               
-#             )
-        
-#         return llm
-#     elif model=="groq":
-#         llm = ChatGroq(
-#                 model="mixtral-8x7b-32768",
-#                 api_key=os.getenv("GROQ_API_KEY"),
-#                 temperature=temperature,
-#                 max_tokens=None,
-#                 timeout=None,
-#                 max_retries=2,
-#                 # other params...
-#             )
-#     return llm
-
 
 class LLMFactory:
     def __init__(self, temperature: float = 0.4):

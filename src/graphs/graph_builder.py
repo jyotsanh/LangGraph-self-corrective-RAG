@@ -13,6 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 #libs
 from libs.libs import *
+from libs import *  
 
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.document_loaders import PyPDFLoader
@@ -23,38 +24,49 @@ import time
 from logs.logger_config import logger as logging
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def query_analyser(state:MyState,testing=False)-> Literal["vectorstore", f"web_search","greet"]:
-    if testing:
-        query = state['messages'][-1]
-    else:
-        query = state['messages'][-1].content
-    
-    system_prompt =  """
-                    You are an expert at routing a user question to a vectorstore,web search and greet.\n
-                    The vectorstore contains documents related to the following topics.\n
-                    - Who created This Project\n
-                    - Who is Jyotsan, His CV details.\n
-                    - Game of Thrones\n
-                    - The Lord of the Rings\n
-                    - Star Wars\n
-                    Use the vectorstore for questions on these topics. Otherwise, use web-search for GK type of questions\n.
-                    if the query is simple greet then just return greet.\n
-                        """
-    route_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            ("human", "{query}"),
-        ]
-    )
-           
-    # LLM with function call
-    llm = get_llm(model="google",temperature=0)
-    structured_llm_router = llm.with_structured_output(RouteQuery)
-    chain = route_prompt | structured_llm_router
-    
-    response = chain.invoke({"query":query})
-    print(f"going to {response.datasource}")
-    return response.datasource
+def query_analyser(state:MyState,testing=False) -> Literal["vectorstore", "web_search","greet"]:
+    try:
+        # Validate state input
+        if not state or "messages" not in state or not state["messages"]:
+            raise ValueError("Invalid state: 'messages' is missing or empty")
+        
+        if testing:
+            query = state['messages'][-1]
+        else:
+            query = state['messages'][-1].content
+        
+        system_prompt =  """
+                        You are an expert at routing a user question to a vectorstore,web search and greet.\n
+                        The vectorstore contains documents related to the following topics.\n
+                        - Who created This Project\n
+                        - Who is Jyotsan, His CV details.\n
+                        - Game of Thrones\n
+                        - The Lord of the Rings\n
+                        - Star Wars\n
+                        Use the vectorstore for questions on these topics. \n
+                        Otherwise, use web-search for General Knowledge type of questions\n.
+                        if the query is simple greet then just return greet.\n
+                            """
+        route_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                ("human", "{query}"),
+            ]
+        )
+            
+        # LLM with function call
+        llm = get_llm(model="google",temperature=0)
+        structured_llm_router = llm.with_structured_output(RouteQuery)
+        chain = route_prompt | structured_llm_router
+        
+        response = chain.invoke({"query":query})
+        
+        # Log routing decision
+        logging.info(f"Query: {query} -> Routing to: {response.datasource}")
+        
+        return response.datasource
+    except Exception as e:
+        logging.error(f"[{current_time}] [ERROR] Chat error: {str(e)}", exc_info=True)
 
 def web_search(state:MyState):
     """
@@ -76,31 +88,6 @@ def web_search(state:MyState):
     state = {**state,"documents": web_results.page_content}
 
     return state
-
-def _load_pdf(pdf_path: str):
-    """Helper function to load documents from a PDF file."""
-    if not os.path.exists(pdf_path):
-        raise FileNotFoundError(f"PDF not found at {pdf_path}")
-    
-    loader = PyPDFLoader(pdf_path)
-    return loader.load()
-
-def _split_documents(docs_list):
-    """Helper function to split documents into chunks."""
-    text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-        chunk_size=100, chunk_overlap=40
-    )
-    return text_splitter.split_documents(docs_list)
-
-def _initialize_vectorstore(doc_splits, embd):
-    """Helper function to initialize vector store with embeddings."""
-    vectorstore = Chroma.from_documents(
-        documents=doc_splits,
-        collection_name="rag-chroma",
-        embedding=embd,
-    )
-    return vectorstore.as_retriever()
-
 
 
 def retriever(state: MyState):
@@ -231,53 +218,62 @@ def generate_response(state:MyState):
     print("hehe")
     return {**state,"answer":chain_response.content}
     
-
+from datetime import datetime
 def build_graph():
-    
-    builder = StateGraph(MyState)
-    logging.info(f"Graph Building....\n")
-    builder.add_node("vectorstore",retriever)
-    builder.add_node("web_search",web_search)
-    
-    builder.add_node("generate_response",generate_response)
-    
-    
-    builder.add_conditional_edges(
-        START,
-        query_analyser,
-        {
-            "vectorstore": "vectorstore", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
-            "web_search": "web_search", # -> if query analysis outputs web_search go to web_search_NODE
-            "greet":"generate_response"
-        }
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        builder = StateGraph(MyState)
+        logging.info(f"[{timestamp}] [GRAPH] Starting graph construction...")
+        logging.info(f"[{timestamp}] [GRAPH] Adding nodes to the graph...")
+        builder.add_node("vectorstore",retriever)
+        builder.add_node("web_search",web_search)
         
-    )
-    builder.add_node("rewrite_question",rewrite_question)
-       
-    builder.add_conditional_edges(
-        "vectorstore",
-        # {
-        #     "yes": generate_response, # -> if check_relevance outputs yes go to vectorstore_NODE.
-        #     "no": rewrite_question # -> if check_relevance outputs no go to rewrite_question
-        # }
-        check_relevance,
-        {
-            "yes": "generate_response", # -> if check_relevance outputs yes go to vectorstore_NODE.
-            "no": "rewrite_question" # -> if check_relevance outputs no go to rewrite_question
-        }
-    )
-    
-    
-    builder.add_edge("rewrite_question","vectorstore")
-    builder.add_edge("web_search","generate_response")
-    builder.add_edge("generate_response",END)
-    
-    ChatMemory = MemorySaver()
-    graph = builder.compile(
-            checkpointer = ChatMemory
+        builder.add_node("generate_response",generate_response)
+        
+        logging.info(f"[{timestamp}] [GRAPH] Adding conditional edges from START to query_analyser...")
+        builder.add_conditional_edges(
+            START,
+            query_analyser,
+            {
+                "vectorstore": "vectorstore", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
+                "web_search": "web_search", # -> if query analysis outputs web_search go to web_search_NODE
+                "greet":"generate_response"
+            }
+            
         )
-    # Visualize your graph
-    # from IPython.display import Image, display
-    # graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")
-    logging.info("Graph Building.... **Sucessfull** ")
-    return graph
+        
+        logging.info(f"[{timestamp}] [GRAPH] Adding conditional edges from 'vectorstore' to check_relevance...")
+        builder.add_node("rewrite_question",rewrite_question)
+        
+        builder.add_conditional_edges(
+            "vectorstore",
+            # {
+            #     "yes": generate_response, # -> if check_relevance outputs yes go to vectorstore_NODE.
+            #     "no": rewrite_question # -> if check_relevance outputs no go to rewrite_question
+            # }
+            check_relevance,
+            {
+                "yes": "generate_response", # -> if check_relevance outputs yes go to vectorstore_NODE.
+                "no": "rewrite_question" # -> if check_relevance outputs no go to rewrite_question
+            }
+        )
+        
+        
+        builder.add_edge("rewrite_question","vectorstore")
+        builder.add_edge("web_search","generate_response")
+        builder.add_edge("generate_response",END)
+        
+        
+        logging.info(f"[{timestamp}] [GRAPH] Initializing chat memory and compiling graph...")
+        ChatMemory = MemorySaver()
+        graph = builder.compile(
+                checkpointer = ChatMemory
+            )
+        # Visualize your graph
+        # from IPython.display import Image, display
+        # graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")
+        logging.info("Graph Building.... **Sucessfull**")
+        return graph
+    except Exception as e:
+        logging.info(f"Error: {e}")
+        return None

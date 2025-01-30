@@ -14,7 +14,7 @@ class MyState(TypedDict):
 class RouteQuery(BaseModel):
     """Route a user query to the most relevant datasource."""
 
-    datasource: Literal["vectorstore", "web_search","query"] = Field(
+    datasource: Literal["vectorstore", "web_search","greet"] = Field(
         ...,
         description="Given a user question choose to route it to web search, vectorstore or a greet.",
     )

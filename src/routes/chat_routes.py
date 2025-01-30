@@ -21,55 +21,26 @@ def chat_endpoint(query: str, senderId: str):
     :return: AI-generated response
     """
     try:
-        print("---------------------------------------------------------------------------Getting response from Runnable LLM node---------------------------------------------------------------------------")
-        
         # Measure the start time 
         start_time = time.time()
-        logging.info(
-            "\n-------------------------------------------------------------------"
-            f"\nEntering the `get_response` function at {current_time} seconds\n"
-            )
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f"[{timestamp}] [CHAT] Received query from senderId={senderId}: {query}")
+        
+        # Log function entry
+        logging.info(f"[{timestamp}] [CHAT] Entering `get_response` function")
+        
         response = get_response(query, senderId)
-        
-        # Measure the end time
-        end_time = time.time()
-        # Calculate the time taken
-        response_time = end_time - start_time
-        
-        
-        
-        # Log user query
-        user_log_message = f"\n{current_time}\nUser Query: {query}\n"
-        logging.info(user_log_message)
-
-        # Log bot response with response time
-        bot_log_message = (
-            f"{current_time}\nBot Response: {response['messages'][-1].content}\n"
-            f"Time Taken: {response_time:.2f} seconds\n"
-            "----------------------------------------------------------------------------------------------------------------------------"
-        )
-        logging.info(bot_log_message)
-        print()
-        print("|---------------------------------------------------------Bot  Response--------------------------------------------------------------|")
-        print("Response: \n",response['messages'][-1].content)
-        print("|---------------------------------------------------------API  Response--------------------------------------------------------------|")
-        print()
-        # return ChatResponse(message=response['messages'][-1].content)
-        respond = {"msg":response['messages'][-1].content}
-        
-        logging.info(
-            "Sucessfully responded"
-            "-------------------------------------------------------------------"
-            )
-        return respond
+        if response is None:
+            raise Exception("Response from `get_response` function is `None` ")
+        response_time = time.time() - start_time  # Calculate response time
+        logging.info(f"[{timestamp}] [CHAT] Response generated in {response_time:.2f}s")
+        logging.info(f"[{timestamp}] [BOT] Response: {response}")
+                
+        return {"msg":response}
+    
     except Exception as e:
-        # Log the error (you'd use proper logging in production)
-        print(f"Chat error: {e}")
-        respond = {
-            "msg": "I'm sorry, there was an error processing your request."
-        }
-        logging.info(
-            f"\nChat error: \n{e}\n"
-            "-------------------------------------------------------------------"
-            )
-        return respond
+        # Handling the Error 
+        logging.error(f"[{timestamp}] [ERROR] Chat error: {str(e)}", exc_info=True)
+        return {
+                "msg": "I'm sorry, there was an error processing your request."
+            }

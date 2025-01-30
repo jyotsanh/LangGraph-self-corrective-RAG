@@ -20,6 +20,8 @@ from langchain_groq import ChatGroq
 from langchain_text_splitters import RecursiveJsonSplitter
 from langchain.schema import Document
 from langchain_community.document_loaders.csv_loader import CSVLoader
+from langchain_core.prompts import ChatPromptTemplate
+
 
 from langchain_chroma import Chroma
 from langchain_milvus import Milvus
@@ -40,6 +42,11 @@ from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
+# Server
+host = os.getenv("MILVUS_HOST")
+port = os.getenv("MILVUS_PORT")
+
+URI = "http://{}:{}".format(host, port)
 
 class LLMFactory:
     def __init__(self, temperature: float = 0.4):

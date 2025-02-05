@@ -1,4 +1,8 @@
-from graphs.graph_builder import build_graph
+# original
+#from graphs.graph_builder import build_graph
+
+# trial
+from graphs.graph_builder2 import build_graph
 
 #libs
 from libs.libs import *
@@ -19,10 +23,17 @@ def get_response(query, sender_id):
                 "thread_id": sender_id,
             }
         }    
+        # state = {
+        #     "messages":("user", query),
+        #     "documents":"",
+        #     "package_type":"",
+        #     "package_name":"",
+        #     "customer_motive":"",
+        #     "customer_type":"",
+        #     "answer": ""
+        # }
         state = {
             "messages":("user", query),
-            "documents":"",
-            "relevance":"",
             "answer": ""
         }
         logging.info(f"[{timestamp}] [GRAPH] State before invocation: {state}")
@@ -33,5 +44,6 @@ def get_response(query, sender_id):
         
         return response['answer']
     except Exception as e:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.error(f"[{timestamp}] [ERROR] Chat error: {str(e)}", exc_info=True)
         return None

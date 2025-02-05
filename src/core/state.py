@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from langgraph.graph.message import AnyMessage, add_messages
 from typing_extensions import TypedDict
 
@@ -7,6 +7,13 @@ from libs.libs import *
 
 class MyState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+
+    package_name: Literal["home", "mobile",None]
+    package_type: Literal["prepaid", "postpaid",None]
+    customer_name: Optional[str]
+    customer_package:Optional[str]
+    customer_motive: Literal["suggestion", "upgrade",None]
+    customer_type: Optional[str]
     documents: str
     answer: str
     
@@ -57,3 +64,22 @@ class StoreArguments(BaseModel):
     )
     embeddings:GoogleGenerativeAIEmbeddings = Field(..., description='embedding to be provided to vector store ')
     
+
+class CollectInfo(BaseModel):
+    """
+    A model to determine the type of customer.
+
+    Attributes:
+        customer_type (Literal["old", "new","None"]): Indicates whether the customer is new, old and None.
+    """
+    customer_type: Literal["old", "new", "None"]
+
+
+class IntrestedPackage(BaseModel):
+    """
+    A model to determine the type of package customer is intrested in.
+
+    Attributes:
+        package_type (Literal["home", "mobile","None"]): Indicates whether the customer is intrested in home, mobile or None.
+    """
+    package_type: Literal["home", "mobile","None"]

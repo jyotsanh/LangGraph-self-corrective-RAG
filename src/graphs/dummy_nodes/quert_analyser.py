@@ -16,9 +16,12 @@ def query_analyser(state:MyState,testing=False)-> Literal["home", "mobile","None
         
         if testing:
             query = state['messages'][-1]
+            conversation_history = "\n".join([msg for msg in state['messages']])
         else:
-            query = state['messages'][-1].content
+            query = state["messages"][-1].content
+            conversation_history = "\n".join([msg.content for msg in state['messages']])
 
+        print(f"\n Conversation history: \n{conversation_history} \n")
         customer_package = state.get('customer_package', None)
         if customer_package is None:
             state['customer_package'] = 'None'
@@ -29,7 +32,7 @@ def query_analyser(state:MyState,testing=False)-> Literal["home", "mobile","None
             route_prompt = ChatPromptTemplate.from_messages(
                 [
                     ("system", system_prompt),
-                    ("human", "{query}"),
+                    ("human", "{conversation_history}"),
                 ]
             )
                 
@@ -38,12 +41,12 @@ def query_analyser(state:MyState,testing=False)-> Literal["home", "mobile","None
             structured_llm_router = llm.with_structured_output(IntrestedPackage)
             chain = route_prompt | structured_llm_router
             
-            response = chain.invoke({"query":query})
+            response = chain.invoke({"conversation_history": conversation_history})
             # Log routing decision
-            logging.info(f"Query: {query} -> Routing to: {response.package_type}")
+            logging.info(f"Query: {query} -> Routing to: {response.package_name}")
             
-            if response.package_type in ['home','mobile','None']:
-                state = {**state,"customer_package": response.package_type}
+            if response.package_name in ['home','mobile','None']:
+                state = {**state,"package_name": response.package_name}
                 return state
             else:
                 raise Exception("Package type not in ['home','mobile']")

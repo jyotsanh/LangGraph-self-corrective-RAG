@@ -48,22 +48,50 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
             logging.info(f"Query: {query} -> Routing to: {response.customer_type}")
             
             if response.customer_type in ['old','new','None']:
-                if response.customer_type == 'new':
-                    pass
+                # if response.customer_type == 'new':
+                #     pass
                 state = {**state,"customer_type": response.customer_type}
                 return state
             else:
                 raise Exception(f"Invalid customer type by Agent: {response.customer_type}")
         else:
-            return state
+            # This else block is for In case customer_type is changed in-between chat.
+            system_prompt =  """
+                            Analyse the user query and Determine if the user is new or old customer.
+                            """
+            route_prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", system_prompt),
+                    ("human", "{query}"),
+                ]
+            )
+                
+            # LLM with function call
+            llm = get_llm(model="google",temperature=0)
+            structured_llm_router = llm.with_structured_output(CollectInfo)
+            chain = route_prompt | structured_llm_router
+            
+            response = chain.invoke({"query":query})
+
+            if response.customer_type in ['old','new']:
+                state = {**state,"customer_type": response.customer_type}
+                return state
     except Exception as e:
         logging.error(f"[{current_time}] [ERROR] Chat error: {str(e)}", exc_info=True)
 
+from langchain.schema import AIMessage  # Import AIMessage
 
 def ask_node(state:MyState,testing=False):
-    state = {**state,"answer": "are you a old or new customer ?"}
+    state = {**state,"messages": [*state["messages"], AIMessage(content="Are you an old or new customer?")]}
     return state
 
 def ask_username(state:MyState,testing=False):
-    state = {**state,"answer": "tell me your username"}
-    return state
+    try:
+        system_prompt =  f"""
+                        Since the customer is old customer , ask him the username, so that you can fetch the customer current package and suggest best package.         
+                        """
+        state = {**state,"messages": [*state["messages"], AIMessage(content="Tell me your username.")]}
+        return state
+    except Exception as e:
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.error(f"[{current_time}] [ERROR] Chat error: {str(e)}", exc_info=True)

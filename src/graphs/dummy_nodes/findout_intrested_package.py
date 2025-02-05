@@ -20,10 +20,10 @@ def findout_intrested_package(state:MyState,testing=False):
         else:
             query = state['messages'][-1].content
 
-        customer_package = state.get('customer_package', None) #-> see if the customer package is set or not, if not set the customer package to None
-        if customer_package is None:
-            state['customer_package'] = 'None'
-        if state['customer_package'] == 'None':
+        package_name = state.get('package_name', None) #-> see if the customer package is set or not, if not set the customer package to None
+        if package_name is None:
+            state['package_name'] = 'None'
+        if state['package_name'] == 'None':
             system_prompt =  f"""
                             
                             You are STC assisstant and you need to findout if the user,
@@ -45,7 +45,7 @@ def findout_intrested_package(state:MyState,testing=False):
             
             response = chain.invoke({"query":query})
             
-            state = {**state,"answer": response.content}
+            state = {**state,"messages": response.content}
             return state
         return state
     except Exception as e:

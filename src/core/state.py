@@ -13,7 +13,7 @@ class MyState(TypedDict):
     customer_name: Optional[str]
     customer_package:Optional[str]
     customer_motive: Literal["suggestion", "upgrade",None]
-    customer_type: Optional[str]
+    customer_type: Literal["old", "new","None"]
     documents: str
     answer: str
     
@@ -82,4 +82,4 @@ class IntrestedPackage(BaseModel):
     Attributes:
         package_type (Literal["home", "mobile","None"]): Indicates whether the customer is intrested in home, mobile or None.
     """
-    package_type: Literal["home", "mobile","None"]
+    package_name: Literal["home", "mobile","None"]

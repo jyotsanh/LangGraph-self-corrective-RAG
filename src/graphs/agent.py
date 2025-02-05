@@ -42,7 +42,7 @@ def get_response(query, sender_id):
         
         logging.info(f"[{timestamp}] [GRAPH] Response received: {response['answer']}")
         
-        return response['answer']
+        return response['messages'][-1].content
     except Exception as e:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logging.error(f"[{timestamp}] [ERROR] Chat error: {str(e)}", exc_info=True)

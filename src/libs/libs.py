@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 import json
 
 # state.py
-from typing import Annotated, List, Literal
+from typing import Annotated, List, Literal, Union
 from langgraph.graph.message import AnyMessage, add_messages
 from typing_extensions import TypedDict
 
@@ -62,7 +62,7 @@ class LLMFactory:
     def _create_google_llm(self):
         return ChatGoogleGenerativeAI(
             model="gemini-1.5-flash",
-            api_key=os.getenv("GOOGLE_API_KEY"),
+            api_key=os.getenv("GOOGLE_API_KEY2"),
             temperature=self.temperature,
             max_tokens=None,
             timeout=None,

@@ -23,8 +23,10 @@ def query_analyser(state:MyState,testing=False)-> Literal["home", "mobile","None
 
         print(f"\n Conversation history: \n{conversation_history} \n")
         customer_package = state.get('customer_package', None)
+
         if customer_package is None:
             state['customer_package'] = 'None'
+            
         if state['customer_package'] == 'None':
             system_prompt =  f"""
                             Analyse if the given query and Determine if the user is intrested in Home Internet or Mobile Internet, if you can't detemine the package type with user query answer -> 'None'. 

@@ -56,25 +56,36 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
                 raise Exception(f"Invalid customer type by Agent: {response.customer_type}")
         else:
             # This else block is for In case customer_type is changed in-between chat.
+
+            conversation_history = "\n".join([msg.content for msg in state['messages']])
+            # print(f"conversation history\n:{conversation_history}\n")
             system_prompt =  """
-                            Analyse the user query and Determine if the user is new or old customer.
+                            Analyse the all conversation history of user and bot and Determine if the user is new or old customer, \n
+                            Things you should consider:\n
+                                - User may say "i am new customer" in first message\n, give more priority to recent messages, because , in between chat user may change his mind and say "i am old customer"\n
                             """
             route_prompt = ChatPromptTemplate.from_messages(
                 [
                     ("system", system_prompt),
-                    ("human", "{query}"),
+                    ("human", "{conversation_history}"),
                 ]
             )
-                
+
+            
+
             # LLM with function call
             llm = get_llm(model="google",temperature=0)
             structured_llm_router = llm.with_structured_output(CollectInfo)
             chain = route_prompt | structured_llm_router
             
-            response = chain.invoke({"query":query})
+            response = chain.invoke({"conversation_history":conversation_history})
+            logging.info(f"Query: {query} -> Routing to: {response.customer_type}")
 
             if response.customer_type in ['old','new']:
                 state = {**state,"customer_type": response.customer_type}
+                return state
+            else:
+                print("here")
                 return state
     except Exception as e:
         logging.error(f"[{current_time}] [ERROR] Chat error: {str(e)}", exc_info=True)
@@ -84,14 +95,3 @@ from langchain.schema import AIMessage  # Import AIMessage
 def ask_node(state:MyState,testing=False):
     state = {**state,"messages": [*state["messages"], AIMessage(content="Are you an old or new customer?")]}
     return state
-
-def ask_username(state:MyState,testing=False):
-    try:
-        system_prompt =  f"""
-                        Since the customer is old customer , ask him the username, so that you can fetch the customer current package and suggest best package.         
-                        """
-        state = {**state,"messages": [*state["messages"], AIMessage(content="Tell me your username.")]}
-        return state
-    except Exception as e:
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.error(f"[{current_time}] [ERROR] Chat error: {str(e)}", exc_info=True)

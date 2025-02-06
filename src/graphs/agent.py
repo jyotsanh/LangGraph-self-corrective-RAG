@@ -40,7 +40,7 @@ def get_response(query, sender_id):
         
         response = graph.invoke(state,config)
         
-        logging.info(f"[{timestamp}] [GRAPH] Response received: {response['answer']}")
+        logging.info(f"[{timestamp}] [GRAPH] Response received: {response['messages'][-1].content}")
         
         return response['messages'][-1].content
     except Exception as e:

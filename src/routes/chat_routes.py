@@ -33,8 +33,9 @@ def chat_endpoint(query: str, senderId: str):
         if response is None:
             raise Exception("Response from `get_response` function is `None` ")
         response_time = time.time() - start_time  # Calculate response time
-        logging.info(f"[{timestamp}] [CHAT] Response generated in {response_time:.2f}s")
+        
         logging.info(f"[{timestamp}] [BOT] Response: {response}")
+        logging.info(f"[{timestamp}] [CHAT] Response generated in {response_time:.2f}s")
                 
         return {"msg":response}
     

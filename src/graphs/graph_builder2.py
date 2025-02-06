@@ -30,10 +30,10 @@ def build_graph():
         
 
         builder.add_node("ask_node",ask_node)
-        builder.add_node("ask_username",ask_username)
-
+       
+        
         builder.add_node("query_analyser",query_analyser)
-
+        builder.add_node("has_username",has_username)
         
 
         builder.add_edge(START,"collection_info")
@@ -43,7 +43,7 @@ def build_graph():
             lambda state: state.get("customer_type", ""),
             {
                 "new": "query_analyser", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
-                "old": "ask_username", # -> if query analysis outputs web_search go to web_search_NODE
+                "old": "has_username", # -> if query analysis outputs web_search go to web_search_NODE
                 "None":"ask_node"
             }
             
@@ -67,24 +67,27 @@ def build_graph():
         ####ENDING HANDLES THE `NEW` CUSTOMER ####
         
         ### BEGINNING HANDLES THE `OLD` CUSTOMER ####
-        # builder.add_conditional_edges(
-        #     "ask_username",
-        #     lambda state: state.get("customer_package", ""), # Extracting the correct key
-        #     {
-        #         "home": "test_response", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
-        #         "mobile": "test_response", # -> if query analysis outputs web_search go to web_search_NODE,
-        #         "None":"findout_intrested_package"
-                
-        #     }
-            
-        # )
+        
+        builder.add_node("fetch_customer_package",fetch_customer_package)
+        builder.add_node("ask_customer_username",ask_customer_username)
+
+        builder.add_conditional_edges(
+                "has_username",
+                lambda state: state.get("go_to", ""),
+                {
+                    "ask_username":"ask_customer_username",
+                    "fetch_customer_package":"fetch_customer_package"
+                }
+            )
+        
         ### ENDING HANDLES THE `OLD` CUSTOMER ####
 
-
+        builder.add_edge("ask_customer_username",END)
+        builder.add_edge("fetch_customer_package",END)
         builder.add_edge("findout_intrested_package",END)
         builder.add_edge("ask_node",END)
         builder.add_edge("test_response",END)
-        builder.add_edge("ask_username",END)
+        builder.add_edge("fetch_customer_package",END)
 
         logging.info(f"[{timestamp}] [GRAPH] Initializing chat memory and compiling graph...")
 
@@ -93,8 +96,8 @@ def build_graph():
                 checkpointer = ChatMemory
             )
         # Visualize your graph
-        # from IPython.display import Image, display
-        # graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")
+        from IPython.display import Image, display
+        graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")
         logging.info("Graph Building.... **Sucessfull**")
         return graph
     except Exception as e:

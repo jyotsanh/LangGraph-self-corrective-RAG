@@ -83,3 +83,15 @@ class IntrestedPackage(BaseModel):
         package_type (Literal["home", "mobile","None"]): Indicates whether the customer is intrested in home, mobile or None.
     """
     package_name: Literal["home", "mobile","None"]
+
+
+class HasUsername(BaseModel):
+    """
+    A model to determine if the conversation history has a customer username or not.
+    
+    Attributes:
+        username (Union[Literal["ask_username"], str]): 
+            Indicates whether the conversation history has a username or not.
+            If not, "ask_username" is returned.
+    """
+    username: Union[Literal["ask_username"], str]

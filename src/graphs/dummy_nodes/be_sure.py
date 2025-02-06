@@ -25,11 +25,11 @@ def make_sure_package(state:MyState,testing=False)->Literal["clear","unclear"]:
             package_type = customer_package['package_type']
             logging.info(f"Customer Current Package : {package_type}")
             system_prompt =  f"""
-                            Customer Current Package : {package_type}
-                            Do not assume that if customer current package is {package_type} package then he may be is intrested in {package_type} package.
-                            You know which package does customer has, but you don't know which package is he intrested in.
-                            Analyse the conversation history and findout if user has said anything about , if he is intrested in home internet or mobile internet. -> "clear"
-                            otherwise -> "unclear"
+                            Analyse the conversation history of customer and findout if customer has said anything about , if he is intrested in home internet or mobile internet.\n
+                            
+
+                            if customer has said anythin about being intrested in home internet or mobile internet, return -> "clear"
+                            otherwise return -> "unclear"
                                 """
             route_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -44,10 +44,11 @@ def make_sure_package(state:MyState,testing=False)->Literal["clear","unclear"]:
             chain = route_prompt | structured_llm_router
 
             response = chain.invoke({"conversation_history": conversation_history})
-            # Log routing decision
-            logging.info(f"Query: {query} -> User Intrest: {response.intrested_package}")
+            
 
             if response.intrested_package in ['clear','unclear']:
+                # Log routing decision
+                logging.info(f"User Intrest: {response.intrested_package}")
                 state = {**state,"intrested_package": response.intrested_package}
                 return state
         else:

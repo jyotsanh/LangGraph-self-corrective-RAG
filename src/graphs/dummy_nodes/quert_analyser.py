@@ -29,7 +29,10 @@ def query_analyser(state:MyState,testing=False)-> Literal["home", "mobile","None
             
         if state['customer_package'] == 'None':
             system_prompt =  f"""
-                            Analyse if the given query and Determine if the user is intrested in Home Internet or Mobile Internet, if you can't detemine the package type with user query answer -> 'None'. 
+                            Analyse if the given conversation history and Determine if the user is intrested in Home Internet or Mobile Internet, if you can't detemine the package type with user query answer -> 'None'. \n
+
+                            Give high priority to most recent messages and then determine
+
                                 """
             route_prompt = ChatPromptTemplate.from_messages(
                 [

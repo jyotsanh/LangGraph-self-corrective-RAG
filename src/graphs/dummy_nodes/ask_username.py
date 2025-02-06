@@ -59,9 +59,9 @@ def has_username(state:MyState,testing=False)-> Union[Literal["ask_username"], s
             conversation_history = "\n".join([msg.content for msg in state['messages']])
             system_prompt ="""
                         With given message history analyse if user has given his username or not, \n
-                        if conversation history doesn't have username,
+                        if customer hasn't said his username in conversation history.
                         then simply return `ask_username` \n
-                        if conversation history have username,
+                        if customer has said his username somewhere in conversation
                         then simply return customer username from conversation history\n
                             """
             route_prompt = ChatPromptTemplate.from_messages(
@@ -79,15 +79,17 @@ def has_username(state:MyState,testing=False)-> Union[Literal["ask_username"], s
             response = chain.invoke({"conversation_history":conversation_history})
             logging.info(f"Routing to: {response.username}")
             if response.username == "ask_username":
+                logging.info(f"We don't know username,Going to ask username -> {response.username}")
                 state = {**state,"go_to":"ask_username"}
                 return state
             else:
+                logging.info(f"I know Customer username -> {response.username}")
                 state['customer_name'] = response.username
                 state = {**state,"go_to":"fetch_customer_package"}
                 return state
         else:
             # we know the username and shoudl go to fetch_customer_package
-            logging.info(f"Customer username: {state['customer_name']}")
+            logging.info(f"We know Customer username: {state['customer_name']}")
             state = {**state,"go_to":"fetch_customer_package"}
             return state
 

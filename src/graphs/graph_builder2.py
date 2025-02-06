@@ -95,7 +95,7 @@ def build_graph():
         builder.add_node("post_paid_internet",post_paid_internet)
 
         builder.add_node("find_out_package_type",find_out_package_type)
-        builder.add_node("all_home_packages",all_home_packages)
+        builder.add_node("both_package_type",both_package_type)
         ##### Beginning of Home Internet packages ####
 
         builder.add_node("Home_Internet",home_internet)
@@ -103,7 +103,7 @@ def build_graph():
             "Home_Internet",
             lambda state: state.get("package_type", ""),
             {
-                "all": "all_home_packages",
+                "all": "both_package_type",
                 "prepaid":"pre_paid_internet",
                 "postpaid":"post_paid_internet",
                 "unclear": "find_out_package_type",
@@ -120,7 +120,7 @@ def build_graph():
             "Mobile_Internet",
             lambda state: state.get("package_type", ""),
             {
-                "all": "all_home_packages",
+                "all": "both_package_type",
                 "prepaid":"pre_paid_internet",
                 "postpaid":"post_paid_internet",
                 
@@ -137,17 +137,17 @@ def build_graph():
 
         # builder.add_node("re_write_question",re_write_question)
 
-        builder.add_edge("all_home_packages","check_relevance")
+        builder.add_edge("both_package_type","check_relevance")
         builder.add_edge("pre_paid_internet","check_relevance")
         builder.add_edge("post_paid_internet","check_relevance")
-        builder.add_edge("find_out_package_type","check_relevance")
+        
 
         builder.add_edge("check_relevance","generate_response")
         builder.add_edge("generate_response",END)
-
+        builder.add_edge("find_out_package_type",END)
         builder.add_edge("ask_customer_username",END)
 
-        
+
 
         # builder.add_edge("fetch_customer_package",END)
         builder.add_edge("findout_intrested_package",END)

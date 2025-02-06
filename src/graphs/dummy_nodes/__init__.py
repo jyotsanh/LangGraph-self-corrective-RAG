@@ -3,7 +3,7 @@ from .quert_analyser import query_analyser
 from .findout_intrested_package import findout_intrested_package,find_out_package_type
 from .ask_username import fetch_customer_package, ask_customer_username, has_username
 from .be_sure import make_sure_package
-from .home_internet import home_internet, all_home_packages
+from .home_internet import home_internet, both_package_type
 from .mobile_internet import mobile_internet
 
 from .package_type import pre_paid_internet,post_paid_internet
@@ -27,7 +27,7 @@ __all__ = [
     "mobile_internet",
     "pre_paid_internet",
     "post_paid_internet",
-    "all_home_packages",
+    "both_package_type",
     "find_out_package_type",
 
     "check_relevance",

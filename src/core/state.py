@@ -77,10 +77,10 @@ class CollectInfo(BaseModel):
 
 class IntrestedPackage(BaseModel):
     """
-    A model to determine the type of package customer is intrested in.
+    A model to determine the name of package customer is intrested in.
 
     Attributes:
-        package_type (Literal["home", "mobile","None"]): Indicates whether the customer is intrested in home, mobile or None.
+        package_name (Literal["home", "mobile","None"]): Indicates whether the customer is intrested in home, mobile or None.
     """
     package_name: Literal["home", "mobile","None"]
 
@@ -106,3 +106,13 @@ class BeSure(BaseModel):
             Indicates whether the customer is clear, on which package he is intrested in.
     """
     intrested_package: Literal["clear","unclear"]
+
+
+class IntrestedPackageType(BaseModel):
+    """
+    A model to determine the type of package customer is intrested in.
+
+    Attributes:
+        package_type (Literal["prepaid", "postpaid","all","unclear"]): Indicates whether the customer is intrested in postpaid, prepaid , both or unclear.
+    """
+    package_type: Literal["prepaid", "postpaid","all","unclear"]

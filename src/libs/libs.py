@@ -21,7 +21,7 @@ from langchain_text_splitters import RecursiveJsonSplitter
 from langchain.schema import Document
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_core.prompts import ChatPromptTemplate
-
+from langchain.schema import AIMessage  # Import AIMessage
 
 from langchain_chroma import Chroma
 from langchain_milvus import Milvus
@@ -62,7 +62,7 @@ class LLMFactory:
     def _create_google_llm(self):
         return ChatGoogleGenerativeAI(
             model="gemini-1.5-flash",
-            api_key=os.getenv("GOOGLE_API_KEY2"),
+            api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=self.temperature,
             max_tokens=None,
             timeout=None,

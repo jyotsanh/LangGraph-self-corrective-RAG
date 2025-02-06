@@ -13,9 +13,6 @@ from graphs.dummy_nodes import *
 from logs.logger_config import logger as logging
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def test_response(state:MyState,testing=False):
-    state = {**state,"messages": f"so you  are intrested in {state['package_name']} packages"}
-    return state
 
 def build_graph():
     try:
@@ -51,13 +48,13 @@ def build_graph():
 
         ####  HANDLES THE `NEW` CUSTOMER ####
         builder.add_node("findout_intrested_package",findout_intrested_package)
-        builder.add_node("test_response",test_response)
+
         builder.add_conditional_edges(
             "query_analyser",
             lambda state: state.get("package_name", ""), # Extracting the correct key
             {
-                "home": "test_response", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
-                "mobile": "test_response", # -> if query analysis outputs web_search go to web_search_NODE,
+                "home": "Home_Internet", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.
+                "mobile": "Mobile_Internet", # -> if query analysis outputs web_search go to web_search_NODE,
                 "None":"findout_intrested_package"
                 
             }
@@ -86,21 +83,75 @@ def build_graph():
         builder.add_conditional_edges(
             "make_sure_intrested_package",
             lambda state: state.get("intrested_package", ""),
-            {
-                "unclear":"findout_intrested_package",
+            {   
                 "clear":"query_analyser",
+                "unclear":"findout_intrested_package",
+                
             }
         )
 
-       
+
+        builder.add_node("pre_paid_internet",pre_paid_internet)
+        builder.add_node("post_paid_internet",post_paid_internet)
+
+        builder.add_node("find_out_package_type",find_out_package_type)
+        builder.add_node("all_home_packages",all_home_packages)
+        ##### Beginning of Home Internet packages ####
+
+        builder.add_node("Home_Internet",home_internet)
+        builder.add_conditional_edges(
+            "Home_Internet",
+            lambda state: state.get("package_type", ""),
+            {
+                "all": "all_home_packages",
+                "prepaid":"pre_paid_internet",
+                "postpaid":"post_paid_internet",
+                "unclear": "find_out_package_type",
+                
+            }
+        )
+
+        ##### Ending of Home Internet packages ####
+
+        #### Beginning of Mobile Internet packages ####
+        builder.add_node("Mobile_Internet",mobile_internet)
+
+        builder.add_conditional_edges(
+            "Mobile_Internet",
+            lambda state: state.get("package_type", ""),
+            {
+                "all": "all_home_packages",
+                "prepaid":"pre_paid_internet",
+                "postpaid":"post_paid_internet",
+                
+                "unclear": "find_out_package_type",
+                
+            }
+        )
+        ### Ending of Mobile Internet packages ####
 
 
+        builder.add_node("check_relevance",check_relevance)
+
+        builder.add_node("generate_response",generate_response)
+
+        # builder.add_node("re_write_question",re_write_question)
+
+        builder.add_edge("all_home_packages","check_relevance")
+        builder.add_edge("pre_paid_internet","check_relevance")
+        builder.add_edge("post_paid_internet","check_relevance")
+        builder.add_edge("find_out_package_type","check_relevance")
+
+        builder.add_edge("check_relevance","generate_response")
+        builder.add_edge("generate_response",END)
 
         builder.add_edge("ask_customer_username",END)
+
+        
+
         # builder.add_edge("fetch_customer_package",END)
         builder.add_edge("findout_intrested_package",END)
         builder.add_edge("ask_node",END)
-        builder.add_edge("test_response",END)
         # builder.add_edge("fetch_customer_package",END)
 
         logging.info(f"[{timestamp}] [GRAPH] Initializing chat memory and compiling graph...")

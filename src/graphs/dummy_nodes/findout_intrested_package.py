@@ -85,3 +85,9 @@ def findout_intrested_package(state:MyState,testing=False):
         return state
     except Exception as e:
         logging.error(f"['fincout_intrested_package'] [ERROR] Chat error: {str(e)}", exc_info=True)
+
+def find_out_package_type(state:MyState,testing=False):
+    try:
+        pass
+    except Exception as e:
+        logging.error(f"FILE ['fincout_intrested_package'->find_out_package_type] [ERROR] Chat error: {str(e)}", exc_info=True)

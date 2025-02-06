@@ -95,3 +95,14 @@ class HasUsername(BaseModel):
             If not, "ask_username" is returned.
     """
     username: Union[Literal["ask_username"], str]
+
+
+class BeSure(BaseModel):
+    """
+    A model to make sure customer is clear, on which package he is intrested in.
+    
+    Attributes:
+        intrested_package (Literal["ask_username","unclear"]): 
+            Indicates whether the customer is clear, on which package he is intrested in.
+    """
+    intrested_package: Literal["clear","unclear"]

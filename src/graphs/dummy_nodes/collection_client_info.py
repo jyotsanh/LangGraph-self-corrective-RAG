@@ -79,7 +79,7 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
             chain = route_prompt | structured_llm_router
             
             response = chain.invoke({"conversation_history":conversation_history})
-            logging.info(f"Query: {query} -> Routing to: {response.customer_type}")
+            logging.info(f"Before Query customer type: {state['customer_type']}Query: {query} -> After Routing to: {response.customer_type}")
 
             if response.customer_type in ['old','new']:
                 state = {**state,"customer_type": response.customer_type}
@@ -88,7 +88,7 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
                 print("here")
                 return state
     except Exception as e:
-        logging.error(f"[{current_time}] [ERROR] Chat error: {str(e)}", exc_info=True)
+        logging.error(f"FILE['collection_client_info'] [ERROR] Chat error: {str(e)}", exc_info=True)
 
 from langchain.schema import AIMessage  # Import AIMessage
 

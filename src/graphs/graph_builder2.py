@@ -52,7 +52,6 @@ def build_graph():
         ####  HANDLES THE `NEW` CUSTOMER ####
         builder.add_node("findout_intrested_package",findout_intrested_package)
         builder.add_node("test_response",test_response)
-
         builder.add_conditional_edges(
             "query_analyser",
             lambda state: state.get("package_name", ""), # Extracting the correct key
@@ -67,7 +66,6 @@ def build_graph():
         ####ENDING HANDLES THE `NEW` CUSTOMER ####
         
         ### BEGINNING HANDLES THE `OLD` CUSTOMER ####
-        
         builder.add_node("fetch_customer_package",fetch_customer_package)
         builder.add_node("ask_customer_username",ask_customer_username)
 
@@ -79,15 +77,31 @@ def build_graph():
                     "fetch_customer_package":"fetch_customer_package"
                 }
             )
-        
         ### ENDING HANDLES THE `OLD` CUSTOMER ####
 
+        builder.add_node("make_sure_intrested_package",make_sure_package)
+
+        builder.add_edge("fetch_customer_package","make_sure_intrested_package")
+
+        builder.add_conditional_edges(
+            "make_sure_intrested_package",
+            lambda state: state.get("intrested_package", ""),
+            {
+                "unclear":"findout_intrested_package",
+                "clear":"query_analyser",
+            }
+        )
+
+       
+
+
+
         builder.add_edge("ask_customer_username",END)
-        builder.add_edge("fetch_customer_package",END)
+        # builder.add_edge("fetch_customer_package",END)
         builder.add_edge("findout_intrested_package",END)
         builder.add_edge("ask_node",END)
         builder.add_edge("test_response",END)
-        builder.add_edge("fetch_customer_package",END)
+        # builder.add_edge("fetch_customer_package",END)
 
         logging.info(f"[{timestamp}] [GRAPH] Initializing chat memory and compiling graph...")
 

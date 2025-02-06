@@ -22,7 +22,7 @@ def build_graph():
         logging.info(f"[{timestamp}] [GRAPH] Starting graph construction...")
         logging.info(f"[{timestamp}] [GRAPH] Adding nodes to the graph...")
 
-        builder.add_node("collection_info",collection_info)
+        builder.add_node("customer_info",collection_info)
 
         
 
@@ -33,10 +33,10 @@ def build_graph():
         builder.add_node("has_username",has_username)
         
 
-        builder.add_edge(START,"collection_info")
+        builder.add_edge(START,"customer_info")
 
         builder.add_conditional_edges(
-            "collection_info",
+            "customer_info",
             lambda state: state.get("customer_type", ""),
             {
                 "new": "query_analyser", # -> if query analysis outputs vectorestore store go to vectorstore_NODE.

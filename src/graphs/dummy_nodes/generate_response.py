@@ -11,10 +11,15 @@ def generate_response(state:MyState):
     try:
         if state["package_name"] in ['home','mobile']:
 
-            
-            message = f"This is the generative response from llm, {state['package_name']} -> {state['package_type']} "
-            state = {**state,"messages":[*state['messages'],HumanMessage(content=message)]}
-            logging.info(f"going to -> END")
-            return state
+            if state.get('documents',None) == None:
+                message = f"This is the generative response from llm, {state['package_name']} -> {state['package_type']} "
+                state = {**state,"messages":[*state['messages'],HumanMessage(content=message)]}
+                logging.info(f"going to -> END")
+                return state
+            else:
+                message = f"This is the documentation fetched generative response from llm, {state['package_name']} -> {state['package_type']} "
+                state = {**state,"messages":[*state['messages'],HumanMessage(content=message)]}
+                logging.info(f"going to -> END")
+                return state
     except Exception as e:
         logging.error(f"FILE ['generate_response'->generate_response] [ERROR] Chat error: {str(e)}", exc_info=True)

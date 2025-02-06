@@ -60,9 +60,10 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
             conversation_history = "\n".join([msg.content for msg in state['messages']])
             # print(f"conversation history\n:{conversation_history}\n")
             system_prompt =  """
-                            Analyse the all conversation history of user and bot and Determine if the user is new or old customer, \n
+                            Analyse all conversation history of Customer and Determine if the Customer is new or old customer, \n
                             Things you should consider:\n
-                                - User may say "i am new customer" in first message\n, give more priority to recent messages, because , in between chat user may change his mind and say "i am old customer"\n
+                                - Customer may say "i am new customer" in first message\n, and in between message can say "i am old customer", \n
+                                give more priority to most recent messages, because   \n
                             """
             route_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -79,13 +80,13 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
             chain = route_prompt | structured_llm_router
             
             response = chain.invoke({"conversation_history":conversation_history})
-            logging.info(f"Before Query customer type: {state['customer_type']}Query: {query} -> After Routing to: {response.customer_type}")
+            logging.info(f"Before Query customer type: {state['customer_type']}     Query: {query} -> After Routing to: {response.customer_type}")
 
             if response.customer_type in ['old','new']:
                 state = {**state,"customer_type": response.customer_type}
                 return state
             else:
-                print("here")
+                raise Exception(f"response is supposed to come-> ['old','new']")
                 return state
     except Exception as e:
         logging.error(f"FILE['collection_client_info'] [ERROR] Chat error: {str(e)}", exc_info=True)

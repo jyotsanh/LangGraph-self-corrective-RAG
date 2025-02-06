@@ -55,11 +55,31 @@ def home_internet(state:MyState,testing=False)-> Literal["prepaid", "postpaid","
 
 
 from langchain.schema import AIMessage  # Import AIMessage
-def both_package_type(state:MyState,testing=False)-> Literal["home", "mobile","None"]:
+# def both_package_type(state:MyState,testing=False):
+#     try:
+#         message = f"so you are intrested in {state['package_name']}, both internet package"
+#         state = {**state,"messages":[*state['messages'],AIMessage(content=message)]}
+#         logging.info(f"{state['package_name']} both package -> check relevance")
+
+#         return state
+#     except Exception as e:
+#         logging.error(f"FILE ['home_internet'->both_package_type] [ERROR] Chat error: {str(e)}", exc_info=True)
+
+
+def similarity_search(query):
+    return "both prepaid and postpaid similar docs, returned"
+
+def both_package_type(state:MyState,testing=False):
     try:
-        message = f"so you are intrested in {state['package_name']}, both internet package"
-        state = {**state,"messages":[*state['messages'],AIMessage(content=message)]}
-        logging.info(f"{state['package_name']} both package -> check relevance")
+        packge_name = state['package_name'] # -> home or mobile
+        package_type = state['package_type'] # -> all
+
+        query = f"provide all the package details about {packge_name} internet package, package type is {package_type}"
+        similar_docs = similarity_search(query=query)
+        logging.info(f"{state['package_name']} both package, fetched docs and going to -> check relevance")
+        state = {**state,"documents": similar_docs}
+        return state
+        
 
         return state
     except Exception as e:

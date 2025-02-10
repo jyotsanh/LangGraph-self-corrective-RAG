@@ -51,7 +51,15 @@ class VectorDB(Enum):
     CHROMA = "chroma"
     MILVUS = "milvus"
     
-    
+class VectorCollection(Enum):
+    GeneralFAQ = "GeneralFAQ"
+    Mobile_Internet = "Mobile_Internet"
+    Home_Internet = "Home_Internet"
+    all = "all"
+        
+
+class UpdateResponse(BaseModel):
+    msg: str
 class StoreArguments(BaseModel):
     path: str = Field(
         ..., description="List of dictionaries containing data to store. Each dictionary should have a 'content' key with the actual content."

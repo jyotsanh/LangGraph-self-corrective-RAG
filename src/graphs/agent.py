@@ -1,6 +1,3 @@
-# original
-#from graphs.graph_builder import build_graph
-
 # trial
 from graphs.graph_builder2 import build_graph
 
@@ -10,19 +7,27 @@ from libs.libs import *
 #state
 from core.state import *
 
+#logs
 from logs.logger_config import logger as logging
+
+# memeory
+from memory.mem import *
+
 graph = build_graph()
 def get_response(query, sender_id):
     try:
-        if graph is None:
-            raise Exception("Graph not initialized. Please initialize the graph first.")
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
         config = {
             "configurable": {
                 "thread_id": sender_id,
             }
-        }    
+        }
+        # if query=="lead":
+        #     clear_memory(memory=chat_memory, thread_id=sender_id)
+        if graph is None:
+            raise Exception("Graph not initialized. Please initialize the graph first.")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            
         # state = {
         #     "messages":("user", query),
         #     "documents":"",

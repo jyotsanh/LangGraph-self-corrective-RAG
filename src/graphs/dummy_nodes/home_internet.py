@@ -7,6 +7,9 @@ from libs.libs import *
 # logs 
 from logs.logger_config import logger as logging
 
+# db
+from models.db import *
+
 def home_internet(state:MyState,testing=False)-> Literal["prepaid", "postpaid","all","unclear"]:
     try:
         # Validate state input
@@ -23,11 +26,15 @@ def home_internet(state:MyState,testing=False)-> Literal["prepaid", "postpaid","
             
         if state['package_name'] == 'home':
             system_prompt =  f"""
-                            You know that Customer is Intrested in {state['package_name']} package.
-                            Analyse the given conversation history and Determine if the user is intrested in prepaid or postpaid package type of {state['package_name']} package \n
+                            
+                            Analyse the given conversation_history and Determine if the user is intrested in prepaid or postpaid package type.\n
                             if the user wants to know both package type then answer -> all \n
-                            if you can't detemine the package type with conversation history then answer -> 'None'. 
+                            if you can't detemine the package type with conversation_history then answer -> 'None'. \n
 
+                            Consider this while analyzing the  conversation_history:\n
+                                - if you see pre-paid and post-paid keywords in conversation_history, don't assume that user is intrested in both packages.\n
+                                - the user must say , he is intrested in both packages in one sentence, then only you can consider that user is intrested in both packages. \n
+                                - Assume that user is intrested in that packages which is most-recent.
                                 """
             route_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -55,32 +62,44 @@ def home_internet(state:MyState,testing=False)-> Literal["prepaid", "postpaid","
 
 
 from langchain.schema import AIMessage  # Import AIMessage
-# def both_package_type(state:MyState,testing=False):
-#     try:
-#         message = f"so you are intrested in {state['package_name']}, both internet package"
-#         state = {**state,"messages":[*state['messages'],AIMessage(content=message)]}
-#         logging.info(f"{state['package_name']} both package -> check relevance")
-
-#         return state
-#     except Exception as e:
-#         logging.error(f"FILE ['home_internet'->both_package_type] [ERROR] Chat error: {str(e)}", exc_info=True)
 
 
-def similarity_search(query):
-    return "both prepaid and postpaid similar docs, returned"
+def similarity_search_func(query,package_name):
+    if package_name == 'home':
+        
+        collection_name=os.getenv("Home_Internet_STC")
+    elif package_name == 'mobile':
+        collection_name = os.getenv("Mobile_Internet_STC")
+    logging.info(f"[DOC] Collection name : {collection_name} of {package_name} internet")
+    open_embeddings = get_embedding("openai")
+    vector_store = VectorStore(
+                                    collection_name=collection_name, 
+                                    store_type="milvus", 
+                                    embeddings =open_embeddings
+                                    ).get_vector_store()
+    docs = vector_store.similarity_search(query=query,k=3)
+    return docs
 
 def both_package_type(state:MyState,testing=False):
     try:
-        packge_name = state['package_name'] # -> home or mobile
-        package_type = state['package_type'] # -> all
+        if state.get('documents',None)==None: # in case the documents is None.
 
-        query = f"provide all the package details about {packge_name} internet package, package type is {package_type}"
-        similar_docs = similarity_search(query=query)
-        logging.info(f"{state['package_name']} both package, fetched docs and going to -> check relevance")
-        state = {**state,"documents": similar_docs}
-        return state
+            package_name = state['package_name'] # -> home or mobile
+
+            # package_type = state['package_type'] # -> all
+            packages_type = ['prepaid','postpaid']
+
+            both_package_context = []
+            for package in packages_type:
+                query = f"Provide all the package details about {package_name} internet , {package} packages"
+                similar_docs = similarity_search_func(query,package_name)
+                both_package_context.append(similar_docs)
+
+            logging.info(f"{state['package_name']} both package, fetched docs and going to -> check relevance")
+            state = {**state,"documents": both_package_context}
+            return state
+        else: # if again user wants to know both package type then why do a similarity search ..
+            return state
         
-
-        return state
     except Exception as e:
         logging.error(f"FILE ['home_internet'->both_package_type] [ERROR] Chat error: {str(e)}", exc_info=True)

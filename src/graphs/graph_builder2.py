@@ -2,9 +2,12 @@ from core.state import *
 
 from langgraph.graph import StateGraph,START,END
 from langgraph.checkpoint.memory import MemorySaver
-
+from langgraph.checkpoint.base import BaseCheckpointSaver,empty_checkpoint
 # # nodes
 # from graphs.nodes import *
+
+# Redis memory:
+from memory.redis_m import *
 
 # dummy nodes
 from graphs.dummy_nodes import *
@@ -13,7 +16,9 @@ from graphs.dummy_nodes import *
 from logs.logger_config import logger as logging
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-
+def clear_memory(memory: BaseCheckpointSaver, thread_id: str) -> None:
+    checkpoint = empty_checkpoint()
+    memory.put(config={"configurable": {"thread_id": thread_id}}, checkpoint=checkpoint, metadata={})
 def build_graph():
     try:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -155,7 +160,7 @@ def build_graph():
         # builder.add_edge("fetch_customer_package",END)
 
         logging.info(f"[{timestamp}] [GRAPH] Initializing chat memory and compiling graph...")
-
+        ChatMemory = RedisSaver.from_conn_info(host="localhost", port=6379, db=0)
         ChatMemory = MemorySaver()
         graph = builder.compile(
                 checkpointer = ChatMemory

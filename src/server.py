@@ -7,8 +7,10 @@ from logs.logger_config import logger
 
 app = FastAPI(
     title="LangGraph based Self-Corrective RAG",
-    description="Self-Corrective RAG made using LangGraph"
+    description="Self-Corrective RAG made using LangGraph",
+    
 )
+
 
 # Include chat routes
 app.include_router(chat_router)
@@ -18,7 +20,7 @@ app.include_router(update_router)
 logger.info("\nFastAPI app initialized successfully.\n")
 
 # Optional: Add health check endpoint
-@app.get("/")
+@app.get("/test")
 async def health_check():
     response = {
                     "status": "healthy"

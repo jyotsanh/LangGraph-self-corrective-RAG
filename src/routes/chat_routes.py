@@ -12,7 +12,7 @@ import time
 from logs.logger_config import logger as logging
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-@router.post("/")
+@router.get("/")
 def chat_endpoint(query: str, senderId: str):
     """
     Handle chat interactions with the AI assistant.
@@ -21,6 +21,9 @@ def chat_endpoint(query: str, senderId: str):
     :return: AI-generated response
     """
     try:
+
+        # if query == "lead":
+        #     memory.chat_memory.clear()
         # Measure the start time 
         start_time = time.time()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -37,7 +40,7 @@ def chat_endpoint(query: str, senderId: str):
         logging.info(f"[{timestamp}] [BOT] Response: {response}")
         logging.info(f"[{timestamp}] [CHAT] Response generated in {response_time:.2f}s")
                 
-        return {"msg":response}
+        return {"result":response}
     
     except Exception as e:
         # Handling the Error 

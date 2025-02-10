@@ -6,6 +6,9 @@ from core.state import *
 
 # importing langchain community
 from langchain_community.document_loaders import PyMuPDFLoader
+# logs
+import time
+from logs.logger_config import logger as logging
 
 
 class VectorStore:
@@ -24,7 +27,7 @@ class VectorStore:
     
     
 
-    def create_document(self, max_chunk_size:int= 100):
+    async def create_document(self, max_chunk_size:int= 100):
         # To get the file path (csv, pdf, json only works for now)
         """
         Reads the file from the given path and creates a list of Document objects, given a file type (csv, pdf, json, md)
@@ -74,20 +77,7 @@ class VectorStore:
                 # Since the text file contains markdown content
                 loader = UnstructuredMarkdownLoader(self.path)
                 
-                
-                #######---------------------------------Old Technique-------------------------------------###
-                # markdown_data = loader.load_and_split()
-                # for document in markdown_data:
-                #     self.md_docs.append(
-                #             Document(
-                #                 page_content=document.page_content,
-                #                 metadata=document.metadata
-                #             )   
-                #         )
-                #######---------------------------------Old Technique-------------------------------------###
-                
-                ####------------------New Technique-------------------------------------------------####
-                document = loader.load()
+                document = await loader.aload()
                 # Then create a text splitter
                 text_splitter = MarkdownTextSplitter(
                     chunk_size = 1000,  # Number of characters per chunk
@@ -123,7 +113,7 @@ class VectorStore:
         else:
             return f"file type error. Allowed file types are .csv, .pdf, .json, .txt only "  
 
-    def create_vector_store(self,max_chunk_size:int= 100):
+    async def create_vector_store(self,max_chunk_size:int= 100):
         """
         Creates a vector store (Milvus or Chroma) given the file path and collection name.
         
@@ -135,28 +125,26 @@ class VectorStore:
         
         if self.store_type ==VectorDB.MILVUS:
             print("the collection name is",self.collection_name)
-            splits = self.create_document(max_chunk_size=max_chunk_size) # -> function that return Document object list which is then passed to Milvus
-            # print("==================================================")
-            # print(splits)
-            # print("==================================================")
+            splits = await self.create_document(max_chunk_size=max_chunk_size) # -> function that 
+            
             print("the uri is",URI)
             print("the host is",host)
             print("the port is",port)
-            vectorstore_milvus= Milvus.from_documents(
+            await Milvus.afrom_documents(
                                                 embedding=self.embeddings,  # -> embeddings
                                                 documents=splits, 
                                                 connection_args = {"uri": URI}, #-> URI represents the milvus server url with it's port
                                                 collection_name=self.collection_name #-> collection name of the vectore store
                                                 )
-            if vectorstore_milvus:
-                response={
-                    "status": "success",
-                    "type": "Milvus",
-                    "collection_name":self.collection_name
-                          }
-                return response
-            else:
-                return "error"
+        
+            response={
+                "status": "success",
+                "type": "Milvus",
+                "collection_name":self.collection_name
+                        }
+            logging.info(f"[UPDATE] -> SUCCESS")
+            return response
+        
             # return vectorstore_milvus
 
         elif self.store_type == VectorDB.CHROMA:
@@ -174,6 +162,9 @@ class VectorStore:
                         } # -> is removed from .env
                 if vectorstore_chroma:
                     return response
+        else:
+            logging.info(f"[ERROR] -> Vector Store : {self.store_type.value} not allowed.")
+            raise Exception("Only Milvus and Chroma vector store is allowed")
 
 
     def get_vector_store(self):

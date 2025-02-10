@@ -25,10 +25,10 @@ def make_sure_package(state:MyState,testing=False)->Literal["clear","unclear"]:
             package_type = customer_package['package_type']
             logging.info(f"Customer Current Package : {package_type}")
             system_prompt =  f"""
-                            Analyse the conversation history of customer and findout if customer has said anything about , if he is intrested in home internet or mobile internet.\n
+                            Analyse the conversation history of customer and findout if customer has said anything about that if he is intrested in home internet or mobile internet.\n
                             
 
-                            if customer has said anythin about being intrested in home internet or mobile internet, return -> "clear"
+                            if customer has said anything about being intrested in home internet or mobile internet, return -> "clear"
                             otherwise return -> "unclear"
                                 """
             route_prompt = ChatPromptTemplate.from_messages(

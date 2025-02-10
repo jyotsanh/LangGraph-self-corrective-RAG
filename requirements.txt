@@ -17,3 +17,6 @@ streamlit
 typing_extensions
 uvicorn
 pypdf
+unstructured
+markdown
+redis

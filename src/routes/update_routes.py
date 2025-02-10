@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
-from graphs.vector_updates import update_vector_store
+from graphs.vector_updates import *
 from pydantic import BaseModel
-
+from fastapi import HTTPException
 router = APIRouter(prefix="/update_vectore_store", tags=["Update"])
 
 # libs
@@ -16,40 +16,55 @@ from logs.logger_config import logger as logging
 
 
 
-@router.post("/")
-def update_endpoint(vectore_store:VectorDB, senderId: str):
+@router.post("/", response_model=UpdateResponse)
+async def update_endpoint(vector_store:VectorDB, senderId: str, collection_name: VectorCollection)-> UpdateResponse:
+    start_time = time.time()
     
+    update_functions = {
+        VectorCollection.GeneralFAQ: general_update_function,
+        VectorCollection.Mobile_Internet: mobile_internet_update_function,
+        VectorCollection.Home_Internet: home_internet_update_function,
+    }
     try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.info(f"[{timestamp}] [UPDATE] Received request to update vector store for sender ID: {senderId}")
-        # Measure the start time 
-        start_time = time.time()
-        
-        response = update_vector_store(vectore_store, senderId)
-        
-        # Measure the end time
-        end_time = time.time()
-        # Calculate the time taken
-        response_time = end_time - start_time
-        
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.info(f" [UPDATE] Received request to update vector store for sender ID: {senderId}")
 
-        # Log successful update
+        if collection_name.value == "all":
+            update_function_responses = []
+            for func in update_functions.values():
+                vec_response = await func(
+                     vector_store=vector_store,
+                    senderId=senderId,
+                    collection_name=collection_name
+                )
+                update_function_responses.append(vec_response)
+            response = " ,".join(update_function_responses)
+        else:
+            if collection_name not in update_functions:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid collection name: {collection_name}"
+                )
+            response = await update_functions[collection_name](
+                    vector_store=vector_store,
+                    senderId=senderId,
+                    collection_name=collection_name
+                )
+       
+        execution_time = time.time() - start_time
+
         logging.info(
-            f"[{timestamp}] [UPDATE SUCCESS] Vector store updated successfully!\n"
-            f"Sender ID: {senderId}\n"
-            f"Vector Store: {vectore_store}\n"
-            f"Time Taken: {response_time:.2f} seconds\n"
-            "----------------------------------------------------------------------------------------------------------------------------"
+            "[UPDATE SUCCESS] Vector store updated successfully!\n"
         )
         
-        res = {"msg": f"{response}"}
-        return res
+        return UpdateResponse(msg=response)
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        error_message = f"[{timestamp}] [UPDATE ERROR] Failed to update vector store for sender ID: {senderId}\nError: {e}"
+        error_message = (
+            f"[UPDATE ERROR] Failed to update vector store\n"
+        )
         logging.error(error_message)
-        respond = {
-            "msg": "I'm sorry, there was an error processing your request. Pls check the logs for more details."
-        }
-        return respond
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error occurred during vector store update"
+        )

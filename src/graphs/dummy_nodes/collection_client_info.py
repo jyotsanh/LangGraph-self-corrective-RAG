@@ -37,7 +37,7 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
             )
                 
             # LLM with function call
-            llm = get_llm(model="google",temperature=0)
+            llm = get_llm(model="openai",temperature=0)
             structured_llm_router = llm.with_structured_output(CollectInfo)
             chain = route_prompt | structured_llm_router
             
@@ -75,7 +75,7 @@ def collection_info(state:MyState,testing=False) -> Literal["old","new","None"]:
             
 
             # LLM with function call
-            llm = get_llm(model="google",temperature=0)
+            llm = get_llm(model="openai",temperature=0)
             structured_llm_router = llm.with_structured_output(CollectInfo)
             chain = route_prompt | structured_llm_router
             
